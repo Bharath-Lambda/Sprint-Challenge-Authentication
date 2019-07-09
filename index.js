@@ -1,4 +1,4 @@
-require('dotenv').config(); // load .env variables
+require('dotenv').config({path: 'path-to-.env'}); // load .env variables
 
 const server = require('./api/server.js');
 
