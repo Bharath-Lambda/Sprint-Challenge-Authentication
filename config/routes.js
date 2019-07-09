@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 const { authenticate } = require('../auth/authenticate');
 const dbConfig = require('../knexfile');
 const db = knex(dbConfig.development);
-const jwtSecret = process.env.JWT_SECRET;
+const jwtSecret = require('../secrets').jwtKey;
 
 module.exports = server => {
   server.post('/api/register', register);
@@ -14,20 +14,8 @@ module.exports = server => {
   server.get('/api/jokes', authenticate, getJokes);
 };
 
-function generateToken(user) {
-  const payload = {
-    username: user.username
-  };
-  const options = {
-    expiresIn: '1h'
-  };
-  return jwt.sign(payload, jwtSecret, options)
-}
-
 function register(req, res) {
   const newUser = req.body
-
-  if (newUser.name && newUser.password) {
     newUser.password = bcrypt.hashSync(newUser.password, 14);
 
     db('users')
@@ -36,7 +24,6 @@ function register(req, res) {
         res.status(201).json(ids);
       })
       .catch(err => res.json(err));
-  }
 }
 
 function login(req, res) {
@@ -47,21 +34,30 @@ function login(req, res) {
     .first()
     .then(user => {
       if (user && bcrypt.compareSync(creds.password, user.password)) {
-        req.session.user = user;
         const token = generateToken(user)
         res.status(200).json({ message: 'Logged in', token});
       } else {
         res.status(401).json({ message: 'You shall not pass!'});
       }
     })
-    .catch(err => res.json(err));
+    .catch(err => res.status(500).json('err'));
+}
+
+function generateToken(user) {
+  const payload = {
+    ...user
+  };
+  const secret = jwtSecret
+  const options = {
+    expiresIn: '1h'
+  };
+  return jwt.sign(payload, secret, options)
 }
 
 function getJokes(req, res) {
   const requestOptions = {
     headers: { accept: 'application/json' },
   };
-
   axios
     .get('https://icanhazdadjoke.com/search', requestOptions)
     .then(response => {
