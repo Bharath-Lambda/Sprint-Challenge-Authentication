@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 
 const { authenticate } = require('../auth/authenticate');
 const dbConfig = require('../knexfile');
-const db = knex(dbConfig);
+const db = knex(dbConfig.development);
 const jwtSecret = process.env.JWT_SECRET;
 
 module.exports = server => {
